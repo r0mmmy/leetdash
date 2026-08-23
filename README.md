@@ -56,7 +56,7 @@ PR에 `ai-review:qwen` 라벨을 추가하면 난이도와 DeepSeek 상태에 �
 
 공개 페이지에는 `master`에 머지된 제출만 반영됩니다. 개인 브랜치는 직접 스캔하지 않습니다.
 
-제출 대상이 `data/problem-catalog.json`에 아직 없으면 운영자가 카탈로그 변경 PR을 먼저 머지합니다. 참가자는 그 변경이 `master`에 반영된 뒤 풀이 파일만 담은 별도 PR을 만듭니다.
+제출 대상이 `data/problem-catalog.json`에 아직 없으면 운영자가 카탈로그 변경 PR을 먼저 머지합니다. 단, SWEA는 사용자가 만든 문제가 수시로 추가되므로 숫자형 문제 번호를 즉시 제출할 수 있습니다. 미등록 SWEA 문제는 제출의 `meta.json` 문제 스냅샷을 사용해 빌드 시 카탈로그에 합쳐집니다.
 
 PR은 `validate` 검증과 `opencode-review-gate` 상태를 통과하면 다른 PR의 GitHub Pages 배포 완료를 기다리지 않고 머지합니다. `opencode-review` Check Run은 상세 리뷰 기록으로 남고, 병합 gate는 최신 OpenCode workflow 실행 및 재시도 번호와 정확히 일치해야 합니다. 찰싹봇은 변경된 `solution.*` 파일을 하나씩 순서대로 리뷰하고, 각 OpenCode 응답 직후 사용 모델 metadata를 포함한 한국어 코멘트를 게시합니다. 각 파일 리뷰의 파일 경로는 리뷰한 head 커밋의 전체 소스 파일로 연결됩니다. 이전에 성공적으로 리뷰한 파일은 내용 해시와 사용 모델이 모두 같을 때만 유지합니다. 파일 하나의 리뷰나 코멘트 전달이 실패해도 경고를 남기고 다음 파일을 계속 처리하지만, 해당 gate는 실패하므로 sweep이 PR을 머지하지 않습니다. 세부 동작과 장애 복구 방식은 [Sweep After OpenCode Review 설계](docs/superpowers/specs/2026-07-23-sweep-after-opencode-review-design.md)에 정리되어 있습니다.
 
@@ -166,6 +166,23 @@ c, cc, cpp, cs, dart, go, java, js, kt, php, py, rb, rs, scala, sql, swift, ts
 
 카탈로그에서 각 목록의 `items[].submissionKey`가 실제 제출 폴더명입니다. LeetCode 목록은 LeetCode 문제 번호를 사용하며, Top Interview Questions Easy도 Explore URL 마지막 숫자가 아니라 문제 고유 LeetCode 번호를 사용합니다. Programmers, 프로그래머스 고득점 Kit, SWEA는 각 플랫폼의 문제 번호를 사용합니다.
 
+카탈로그에 아직 없는 SWEA 문제는 `submissions/<githubUsername>/swea/<1~8자리 문제번호>/` 경로로 제출할 수 있습니다. 확장 프로그램은 다음 형태의 문제 스냅샷을 `meta.json`에 함께 기록합니다. 스냅샷이 없는 수동 제출도 허용되며 이 경우 제목은 `SWEA <문제번호>`, 난이도는 `Unknown`으로 표시됩니다. 정적 카탈로그에 같은 문제가 추가되면 정적 정보가 우선합니다.
+
+```json
+{
+  "status": "solved",
+  "language": "Java",
+  "solvedAt": "2026-08-23T12:00:00.000Z",
+  "problem": {
+    "provider": "swea",
+    "problemId": "12345678",
+    "title": "사용자 정의 문제",
+    "difficulty": "Unknown",
+    "sourceUrl": "https://swexpertacademy.com/main/code/problem/problemDetail.do?contestProbId=..."
+  }
+}
+```
+
 카탈로그 재생성은 운영자가 문제 목록 자체를 다시 만들 때만 사용합니다. 일반 참가자는 이 명령을 실행할 필요가 없습니다.
 
 입력 파일은 임의의 README가 아니라, `scripts/build-catalog.mjs`가 파싱할 수 있는 문제 목록 Markdown이어야 합니다. 현재는 `honood/leetcode` README처럼 `## [LeetCode 75]`, `## [Top Interview 150]` 섹션과 문제 링크 표기가 들어 있는 형식을 기준으로 합니다.
@@ -197,7 +214,7 @@ npm run progress:build
 
 ## 미풀이 사용자 알림
 
-`.github/workflows/inactive-reminders.yml`은 매일 오전 9시(Asia/Seoul)에 실행되어 고정 GitHub Issue에 미풀이 사용자를 멘션합니다. 알림 대상은 `data/users.json`에 `active: true`가 명시되어 있고 풀이 이력이 있는 사용자입니다. 마지막 풀이 후 3일째, 7일째, 이후 7일마다 알립니다.
+`.github/workflows/inactive-reminders.yml`은 매일 오전 9시(Asia/Seoul)에 실행되어 고정 GitHub Issue에 미풀이 사용자를 멘션합니다. 알림 대상은 `data/users.json`에 `active: true`가 명시되어 있고 풀이 이력이 있는 사용자입니다. 마지막 풀이 후 3일째, 7일째, 이후 7일마다 알립니다. 아직 병합되지 않은 열린 PR의 풀이도 최근 활동으로 계산합니다.
 
 운영자는 알림용 Issue를 하나 만든 뒤 저장소의 `Settings > Secrets and variables > Actions > Variables`에서 `REMINDER_ISSUE_NUMBER`를 해당 Issue 번호로 등록합니다. 같은 날짜의 workflow를 재실행해도 관리 마커를 확인하여 댓글을 중복 작성하지 않습니다. 수동 검증은 Actions의 `Inactive User Reminders` workflow에서 `Run workflow`로 실행합니다.
 

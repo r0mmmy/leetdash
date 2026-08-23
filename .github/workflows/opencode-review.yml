@@ -63,7 +63,9 @@ jobs:
 
       - name: Run trusted OpenCode review
         id: opencode-review
-        if: github.event_name == 'pull_request_target' || github.event.workflow_run.conclusion == 'success'
+        if: >-
+          (github.event_name == 'pull_request_target' || github.event.workflow_run.conclusion == 'success') &&
+          steps.resolve-pr.outputs.is-draft != 'true'
         run: |
           node scripts/opencode-review.mjs \
             --base "${{ steps.resolve-pr.outputs.base-sha }}" \

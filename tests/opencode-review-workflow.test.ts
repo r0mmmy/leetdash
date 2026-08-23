@@ -18,7 +18,8 @@ describe("trusted OpenCode review workflow", () => {
     expect(workflow).toContain("run-name: opencode-review:${{ github.event.workflow_run.head_sha || github.event.pull_request.head.sha }}");
     expect(workflow).toContain("types:\n      - completed");
     expect(workflow).toContain("github.event.workflow_run.event == 'pull_request'");
-    expect(workflow).toContain("if: github.event_name == 'pull_request_target' || github.event.workflow_run.conclusion == 'success'");
+    expect(workflow).toContain("(github.event_name == 'pull_request_target' || github.event.workflow_run.conclusion == 'success') &&");
+    expect(workflow).toContain("steps.resolve-pr.outputs.is-draft != 'true'");
     expect(workflow).not.toContain("workflow_run.pull_requests[0]");
     expect(workflow).toContain("pull_request_target:");
     expect(workflow).toContain("github.event.label.name == 'ai-review:qwen'");
