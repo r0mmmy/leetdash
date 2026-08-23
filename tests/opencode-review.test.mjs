@@ -103,6 +103,29 @@ describe("reviewPullRequest", () => {
     expect(isHardCatalogProblem({ lists: [] }, parsed)).toBe(false);
   });
 
+  it("resolves an items-only catalog entry through its canonical problemKey", () => {
+    const parsed = { sourceKey: "programmers-high-score-kit", submissionKey: "42579" };
+    const catalogWithReferencedProblem = {
+      lists: [
+        {
+          key: "programmers-high-score-kit",
+          items: [{ problemKey: "programmers:42579", submissionKey: "42579" }],
+        },
+        {
+          key: "programmers",
+          problems: [{
+            provider: "programmers",
+            problemId: "42579",
+            problemKey: "programmers:42579",
+            difficulty: "level-3",
+          }],
+        },
+      ],
+    };
+
+    expect(isHardCatalogProblem(catalogWithReferencedProblem, parsed)).toBe(true);
+  });
+
   it("reuses an unchanged successful file review without calling OpenCode", async () => {
     const source = "class Solution {}";
     const mutations = [];

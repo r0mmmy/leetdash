@@ -276,10 +276,25 @@ function findCatalogProblem(catalog, { sourceKey, submissionKey }) {
   if (!Array.isArray(catalog?.lists)) return undefined;
   const list = catalog.lists.find((candidate) => candidate?.key === sourceKey);
   if (!list) return undefined;
-  const candidates = Array.isArray(list.problems) ? list.problems : Array.isArray(list.items) ? list.items : [];
-  return candidates.find((problem) => (
-    String(problem?.problemId ?? problem?.submissionKey ?? "") === submissionKey
-  ));
+  const matchesSubmission = (candidate) => (
+    String(candidate?.problemId ?? candidate?.submissionKey ?? "") === submissionKey
+  );
+  const directProblem = Array.isArray(list.problems)
+    ? list.problems.find(matchesSubmission)
+    : undefined;
+  if (directProblem) return directProblem;
+
+  const item = Array.isArray(list.items)
+    ? list.items.find(matchesSubmission)
+    : undefined;
+  if (!item || typeof item.problemKey !== "string" || item.problemKey.length === 0) return item;
+
+  for (const candidateList of catalog.lists) {
+    if (!Array.isArray(candidateList?.problems)) continue;
+    const referencedProblem = candidateList.problems.find((problem) => problem?.problemKey === item.problemKey);
+    if (referencedProblem) return referencedProblem;
+  }
+  return item;
 }
 
 function isHardCatalogProblem(catalog, parsedPath) {
