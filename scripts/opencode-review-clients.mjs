@@ -134,12 +134,18 @@ class OpenCodeClient {
               model: profile.apiModel,
               messages: [{ role: "user", content: prompt }],
             };
+        const authenticationHeaders = profile.protocol === "messages"
+          ? {
+              "x-api-key": apiKey,
+              "anthropic-version": "2023-06-01",
+            }
+          : { Authorization: `Bearer ${apiKey}` };
         response = await Promise.race([
           this.fetchImpl(profile.url, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${apiKey}`,
+              ...authenticationHeaders,
               "x-opencode-request": clientRequestId,
             },
             body: JSON.stringify(requestBody),
