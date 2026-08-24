@@ -63,7 +63,7 @@ describe("OpenCodeClient", () => {
     const requests = [];
     const client = new OpenCodeClient({
       fetchImpl: async (url, init) => {
-        requests.push({ url: String(url), body: JSON.parse(init.body) });
+        requests.push({ url: String(url), headers: init.headers, body: JSON.parse(init.body) });
         return jsonResponse({
           role: "assistant",
           content: [{ type: "thinking", thinking: "hidden" }, { type: "text", text: "Qwen review" }],
@@ -78,6 +78,12 @@ describe("OpenCodeClient", () => {
     })).resolves.toBe("Qwen review");
     expect(requests).toEqual([{
       url: "https://opencode.ai/zen/go/v1/messages",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": "test-secret",
+        "anthropic-version": "2023-06-01",
+        "x-opencode-request": expect.any(String),
+      },
       body: {
         model: "qwen3.7-plus",
         max_tokens: 8192,
